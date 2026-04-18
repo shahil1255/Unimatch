@@ -1,0 +1,6 @@
+shahil2305341255_db_user
+niMs8qYL2wrZwZMQ
+
+
+
+mongodb+srv://shahil2305341255_db_user:<db_password>@cluster0.osq75pg.mongodb.net/?appName=Cluster0
