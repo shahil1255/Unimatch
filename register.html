@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniMatch - Register</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div class="auth-body">
+        <div class="card" style="width: 100%; max-width: 400px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2>Create an Account</h2>
+                <p>Join UniMatch to find your university</p>
+            </div>
+            
+            <div id="alert" class="alert"></div>
+
+            <form id="register-form">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="name" required placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" required placeholder="john@example.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" required placeholder="••••••••">
+                </div>
+                <div class="form-group">
+                    <label>Re-enter Password</label>
+                    <input type="password" id="re-password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn" style="width: 100%;">Register</button>
+            </form>
+            
+            <div style="text-align: center; margin-top: 15px;">
+                <p>Already have an account? <a href="login.html" style="color: #4da6ff;">Login</a></p>
+                <p style="margin-top: 10px;"><a href="index.html" style="color: #ccc;">Back to Home</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const rePassword = document.getElementById('re-password').value;
+            const alertBox = document.getElementById('alert');
+
+            if (password !== rePassword) {
+                alertBox.className = 'alert error';
+                alertBox.innerText = 'Passwords do not match!';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password })
+                });
+                
+                let data;
+                try {
+                    data = await res.json();
+                } catch (e) {
+                    data = { error: 'Invalid server response' };
+                }
+
+                if(res.ok) {
+                    alertBox.className = 'alert success';
+                    alertBox.innerText = 'Registration successful! You can now login.';
+                    document.getElementById('register-form').reset();
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 1500);
+                } else {
+                    alertBox.className = 'alert error';
+                    if (res.status === 503) {
+                        alertBox.innerText = 'Database is offline. Please try again in a few minutes.';
+                    } else {
+                        alertBox.innerText = data.error || 'Registration failed. Try a different email.';
+                    }
+                }
+            } catch(err) {
+                console.error('Fetch error:', err);
+                alertBox.className = 'alert error';
+                alertBox.innerText = 'Cannot connect to server. Is the backend running?';
+            }
+        });
+    </script>
+</body>
+</html>

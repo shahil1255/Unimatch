@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniMatch - Profile</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar">
+        <div style="text-align:right; padding: 10px;">
+            <i class="fa-solid fa-times menu-btn" onclick="toggleMenu()"></i>
+        </div>
+        <ul class="menu-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="programs.html">Programs</a></li>
+            <li><a href="profile.html">Profile</a></li>
+            <li><a href="application.html">Application</a></li>
+            <li><a href="contact.html">Contact Us</a></li>
+        </ul>
+    </div>
+
+    <!-- Navbar -->
+    <nav>
+        <div class="logo">
+            <i class="fa-solid fa-bars menu-btn" onclick="toggleMenu()"></i>
+            <a href="index.html" class="logo"><i class="fa-solid fa-graduation-cap"></i> Uni<span>Match</span></a>
+        </div>
+        <ul class="nav-links" id="nav-links"></ul>
+    </nav>
+
+    <div class="container">
+        <h2>My Profile</h2>
+        
+        <div class="card" style="margin-top: 20px; max-width: 600px; margin: 20px auto; text-align: center;">
+            <img id="avatar-preview" src="https://via.placeholder.com/150" alt="Avatar" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; border: 3px solid #0044cc;">
+            
+            <form id="avatar-form">
+                <input type="file" id="avatarUpload" accept="image/*" style="display: none;">
+                <label for="avatarUpload" class="btn" style="cursor: pointer; font-size: 0.9rem;">Change Avatar</label>
+            </form>
+            <div id="avatar-alert" class="alert" style="margin-top: 10px;"></div>
+        </div>
+
+        <div class="card" style="max-width: 600px; margin: 20px auto;">
+            <div id="alert" class="alert"></div>
+            <form id="profile-form">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="name" required>
+                </div>
+                <div class="form-group">
+                    <label>Email (cannot be changed)</label>
+                    <input type="email" id="email" disabled>
+                </div>
+                <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+                <h4>Academic Details</h4><br>
+                <div class="form-group">
+                    <label>Degree Level</label>
+                    <input type="text" id="degree" placeholder="BSc, Masters, etc.">
+                </div>
+                <div class="form-group">
+                    <label>Field of Study</label>
+                    <input type="text" id="field" placeholder="CSE, BBA, etc.">
+                </div>
+                <div class="form-group">
+                    <label>CGPA</label>
+                    <input type="number" step="0.1" id="cgpa">
+                </div>
+                <div class="form-group">
+                    <label>IELTS Score</label>
+                    <input type="number" step="0.5" id="ielts">
+                </div>
+                <div class="form-group">
+                    <label>MIO Score</label>
+                    <input type="number" step="1" id="mioScore" placeholder="Enter your MIO score (0-100)">
+                </div>
+                <div class="form-group">
+                    <label>Country of Residence</label>
+                    <input type="text" id="country">
+                </div>
+                <button type="submit" class="btn">Update Profile</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const res = await fetch('/api/auth/profile');
+                if (!res.ok) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                const user = await res.json();
+                document.getElementById('name').value = user.name || '';
+                document.getElementById('email').value = user.email || '';
+                document.getElementById('degree').value = user.degree || '';
+                document.getElementById('field').value = user.field || '';
+                document.getElementById('cgpa').value = user.cgpa || '';
+                document.getElementById('ielts').value = user.ielts || '';
+                document.getElementById('mioScore').value = user.mioScore || '';
+                document.getElementById('country').value = user.country || '';
+
+                if (user.avatarUrl) {
+                    document.getElementById('avatar-preview').src = user.avatarUrl;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        // Avatar Upload Logic
+        document.getElementById('avatarUpload').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('avatar', file);
+            
+            const alertBox = document.getElementById('avatar-alert');
+            alertBox.className = 'alert';
+            alertBox.innerText = 'Uploading...';
+            alertBox.style.display = 'block';
+
+            try {
+                const res = await fetch('/api/auth/upload-avatar', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                
+                if(res.ok) {
+                    document.getElementById('avatar-preview').src = data.avatarUrl;
+                    alertBox.className = 'alert success';
+                    alertBox.innerText = 'Avatar updated successfully!';
+                } else {
+                    alertBox.className = 'alert error';
+                    alertBox.innerText = data.error || 'Failed to upload photo.';
+                }
+            } catch (err) {
+                alertBox.className = 'alert error';
+                alertBox.innerText = 'Server error during upload.';
+            }
+        });
+
+        document.getElementById('profile-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const alertBox = document.getElementById('alert');
+            const profile = {
+                degree: document.getElementById('degree').value,
+                field: document.getElementById('field').value,
+                cgpa: document.getElementById('cgpa').value,
+                ielts: document.getElementById('ielts').value,
+                mioScore: document.getElementById('mioScore').value,
+                country: document.getElementById('country').value
+            };
+
+            try {
+                const res = await fetch('/api/auth/profile', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: document.getElementById('name').value, profile })
+                });
+                const data = await res.json();
+                alertBox.className = res.ok ? 'alert success' : 'alert error';
+                alertBox.innerText = data.message || data.error || 'Profile updated successfully!';
+            } catch (err) {
+                alertBox.className = 'alert error';
+                alertBox.innerText = 'Failed to update profile.';
+            }
+        });
+    </script>
+</body>
+</html>

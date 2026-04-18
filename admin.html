@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniMatch - Admin Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .tabs { display: flex; gap: 20px; border-bottom: 2px solid rgba(255,255,255,0.1); margin-bottom: 30px; }
+        .tab { padding: 10px 20px; cursor: pointer; color: #ccc; }
+        .tab.active { color: #4da6ff; border-bottom: 2px solid #4da6ff; font-weight: bold; }
+        .admin-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: rgba(0,0,0,0.2); border-radius: 10px; overflow: hidden; }
+        .admin-table th, .admin-table td { padding: 15px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .admin-table th { background: rgba(77,166,255,0.1); color: #4da6ff; }
+        .avatar-small { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar">
+        <div style="text-align:right; padding: 10px;">
+            <i class="fa-solid fa-times menu-btn" onclick="toggleMenu()"></i>
+        </div>
+        <ul class="menu-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="programs.html">Programs</a></li>
+            <li><a href="profile.html">Profile</a></li>
+            <li><a href="application.html">Application</a></li>
+            <li><a href="admin.html">Admin Records</a></li>
+            <li><a href="contact.html">Contact Us</a></li>
+        </ul>
+    </div>
+
+    <!-- Navbar -->
+    <nav>
+        <div class="logo">
+            <i class="fa-solid fa-bars menu-btn" onclick="toggleMenu()"></i>
+            <a href="index.html" class="logo"><i class="fa-solid fa-graduation-cap"></i> Uni<span>Match</span></a>
+        </div>
+        <ul class="nav-links" id="nav-links"></ul>
+    </nav>
+
+    <div class="container">
+        <h2>Administrator Records</h2>
+        <p style="color:#aaa; margin-bottom: 30px;">View and track all student registrations and university applications.</p>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('users')"><i class="fa-solid fa-users"></i> Registered Students</div>
+            <div class="tab" onclick="switchTab('apps')"><i class="fa-solid fa-file-invoice"></i> All Applications</div>
+        </div>
+
+        <div id="users-view">
+            <div id="users-loading">Loading students...</div>
+            <table class="admin-table" id="users-table" style="display:none;">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Email</th>
+                        <th>Academic Goal</th>
+                        <th>CGPA / IELTS</th>
+                        <th>Registered On</th>
+                    </tr>
+                </thead>
+                <tbody id="users-body"></tbody>
+            </table>
+        </div>
+
+        <div id="apps-view" style="display:none;">
+            <div id="apps-loading">Loading applications...</div>
+            <table class="admin-table" id="apps-table" style="display:none;">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>University</th>
+                        <th>Program</th>
+                        <th>Status</th>
+                        <th>Date Applied</th>
+                    </tr>
+                </thead>
+                <tbody id="apps-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchUsers();
+            fetchApps();
+        });
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            if (tab === 'users') {
+                document.getElementById('users-view').style.display = 'block';
+                document.getElementById('apps-view').style.display = 'none';
+            } else {
+                document.getElementById('users-view').style.display = 'none';
+                document.getElementById('apps-view').style.display = 'block';
+            }
+        }
+
+        async function fetchUsers() {
+            try {
+                const res = await fetch('/api/admin/users');
+                const users = await res.json();
+                document.getElementById('users-loading').style.display = 'none';
+                document.getElementById('users-table').style.display = 'table';
+                
+                const body = document.getElementById('users-body');
+                body.innerHTML = '';
+                users.forEach(u => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="display:flex; align-items:center; gap:10px;">
+                            <img src="${u.avatarUrl || 'https://via.placeholder.com/150'}" class="avatar-small">
+                            ${u.name}
+                        </td>
+                        <td>${u.email}</td>
+                        <td>${u.degree || '-'} in ${u.field || '-'}</td>
+                        <td>${u.cgpa || '0.00'} / ${u.ielts || '0.0'}</td>
+                        <td>${new Date(u.createdAt).toLocaleDateString()}</td>
+                    `;
+                    body.appendChild(row);
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        async function fetchApps() {
+            try {
+                const res = await fetch('/api/admin/applications');
+                const apps = await res.json();
+                document.getElementById('apps-loading').style.display = 'none';
+                document.getElementById('apps-table').style.display = 'table';
+                
+                const body = document.getElementById('apps-body');
+                body.innerHTML = '';
+                apps.forEach(a => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${a.user ? a.user.name : 'Unknown User'}</td>
+                        <td>${a.university ? a.university.name : 'Unknown University'}</td>
+                        <td>${a.university ? a.university.country : '-'}</td>
+                        <td><span style="color:${a.status === 'Accepted' ? '#28a745' : a.status === 'Rejected' ? '#dc3545' : '#ffc107'}">${a.status}</span></td>
+                        <td>${new Date(a.createdAt).toLocaleDateString()}</td>
+                    `;
+                    body.appendChild(row);
+                });
+            } catch (err) { console.error(err); }
+        }
+    </script>
+</body>
+</html>
